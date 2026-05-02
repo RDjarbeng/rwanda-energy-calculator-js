@@ -255,6 +255,7 @@
     .ap-card.active .ap-emoji { transform:scale(1.12); }
     .ap-name { font-size:.82rem; font-weight:700; color:var(--gray-700); margin-bottom:.1rem; }
     .ap-default { font-size:.68rem; color:var(--gray-400); }
+    .ap-monthly { font-size:.68rem; font-weight:800; color:var(--green-dark); min-height:.85rem; letter-spacing:-.01em; }
 
     .qty-control { display:flex; align-items:center; margin-top:.65rem; background:var(--gray-100); border-radius:999px; overflow:hidden; height:30px; }
     .qty-btn { width:30px; height:30px; border:none; background:transparent; color:var(--gray-600); font-size:1.1rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background var(--t), color var(--t); border-radius:999px; }
@@ -831,6 +832,7 @@ function buildApplianceGrid() {
       <span class="ap-emoji">${a.emoji}</span>
       <div class="ap-name">${a.name}</div>
       <div class="ap-default" id="ap-default-${a.id}">${s.watts}W · ${fmtHours(s.hours)}</div>
+      <div class="ap-monthly" id="ap-monthly-${a.id}">${s.qty>0?fmt(round2(s.qty*s.watts*s.hours*30/1000),1)+' kWh/mo':''}</div>
       <div class="qty-control">
         <button class="qty-btn minus" onclick="changeQty('${a.id}',-1,event)">−</button>
         <span class="qty-num" id="qty-${a.id}">${s.qty}</span>
@@ -867,12 +869,20 @@ function toggleSettings(id,e) {
   document.getElementById('ap-card-'+id).classList.toggle('open');
 }
 
+function updateApMonthly(id) {
+  const el=document.getElementById('ap-monthly-'+id);
+  if(!el) return;
+  const s=state[id];
+  el.textContent = s.qty>0 ? fmt(round2(s.qty*s.watts*s.hours*30/1000),1)+' kWh/mo' : '';
+}
+
 function updateSetting(id,field,val) {
   const v=parseFloat(val);
   if(!isNaN(v)&&v>0){
     state[id][field]=v;
     const defEl=document.getElementById('ap-default-'+id);
     if(defEl) defEl.textContent=`${state[id].watts}W · ${fmtHours(state[id].hours)}`;
+    updateApMonthly(id);
     renderEstimatorResult();
   }
 }
@@ -890,6 +900,7 @@ function changeQty(id,delta,e) {
   void numEl.offsetWidth;
   numEl.classList.add('bump');
   card.classList.toggle('active',s.qty>0);
+  updateApMonthly(id);
   renderEstimatorResult();
 }
 
