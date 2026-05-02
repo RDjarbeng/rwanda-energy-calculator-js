@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rwanda Energy Calculator</title>
+  <meta name="description" content="Calculate electricity costs, units, and household consumption based on Rwanda Energy Group (REG) tariffs." />
+  <link rel="icon" href="favicon.ico" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:        #16a34a;
+      --green-dark:   #166534;
+      --green-light:  #dcfce7;
+      --green-glow:   rgba(22,163,74,.18);
+      --blue:         #2563eb;
+      --blue-light:   #eff6ff;
+      --amber:        #d97706;
+      --amber-light:  #fffbeb;
+      --red:          #dc2626;
+      --red-light:    #fef2f2;
+      --gray-50:  #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius:    14px;
+      --radius-sm: 9px;
+      --radius-xs: 6px;
+      --shadow:    0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 10px 24px rgba(0,0,0,.08);
+      --shadow-lg: 0 10px 15px rgba(0,0,0,.07), 0 20px 40px rgba(0,0,0,.10);
+      --t: .2s cubic-bezier(.4,0,.2,1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+      line-height: 1.55;
+    }
+
+    /* ── HEADER ── */
+    .site-header {
+      background: linear-gradient(135deg, #052e16 0%, #064e3b 55%, #065f46 100%);
+      padding: 2rem 1.5rem 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .site-header::before {
+      content:''; position:absolute; inset:0;
+      background: radial-gradient(ellipse at 70% 0%, rgba(74,222,128,.12) 0%, transparent 60%);
+      pointer-events:none;
+    }
+    .header-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px; padding: 4px 14px;
+      font-size: .72rem; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; color: #bbf7d0; margin-bottom: .9rem;
+    }
+    .site-header h1 {
+      font-size: clamp(1.5rem, 4vw, 2.4rem); font-weight: 800;
+      letter-spacing: -.03em; color: #fff; margin-bottom: .4rem;
+    }
+    .site-header .tagline { font-size: .9rem; color: rgba(255,255,255,.65); margin-bottom: .9rem; }
+    .header-links { display:flex; flex-wrap:wrap; gap:.45rem; justify-content:center; margin-bottom:1.5rem; }
+    .header-links a {
+      color: rgba(255,255,255,.75); font-size: .75rem; text-decoration: none;
+      background: rgba(255,255,255,.09); padding: 4px 12px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.15); transition: background var(--t);
+    }
+    .header-links a:hover { background: rgba(255,255,255,.18); color:#fff; }
+
+    /* ── TABS ── */
+    .tab-nav { display:flex; justify-content:center; gap:4px; padding: 0 1rem; }
+    .tab-btn {
+      cursor:pointer; border:none; background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.65); border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      padding: .65rem 1.6rem; font-size: .88rem; font-weight: 600;
+      transition: background var(--t), color var(--t);
+      display:flex; align-items:center; gap:.45rem;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,.15); color:rgba(255,255,255,.9); }
+    .tab-btn.active { background: var(--gray-50); color: var(--green-dark); }
+
+    /* ── TARIFF + RATE BARS ── */
+    .tariff-bar {
+      background:#fff; border-bottom: 1px solid var(--gray-200);
+      padding: .65rem 1.5rem; display:flex; align-items:center;
+      justify-content:center; gap:1rem; flex-wrap:wrap;
+    }
+    .tariff-bar-label { font-size:.78rem; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.05em; }
+    .tariff-pills { display:flex; gap:.4rem; }
+    .tariff-pill {
+      cursor:pointer; border: 2px solid var(--gray-200); background: var(--gray-50);
+      color: var(--gray-500); border-radius: 999px; padding: 4px 14px;
+      font-size: .8rem; font-weight: 600; transition: all var(--t);
+      display:flex; align-items:center; gap:6px;
+    }
+    .tariff-pill.active { border-color:var(--green); background:var(--green-light); color:var(--green-dark); }
+    .tariff-pill .badge { background:var(--green); color:#fff; font-size:.6rem; font-weight:800; border-radius:999px; padding:1px 7px; text-transform:uppercase; }
+    .rate-strip {
+      background:#fff; border-bottom: 1px solid var(--gray-200);
+      padding: .5rem 1.5rem; display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; align-items:center;
+    }
+    .rate-label { font-size:.72rem; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; }
+    .rate-tag { display:inline-flex; align-items:center; gap:5px; font-size:.75rem; font-weight:600; padding:3px 10px; border-radius:999px; }
+    .rt-1 { background:var(--green-light); color:var(--green-dark); }
+    .rt-2 { background:var(--blue-light); color:var(--blue); }
+    .rt-3 { background:var(--amber-light); color:var(--amber); }
+    .rt-vat { background:var(--gray-100); color:var(--gray-500); }
+
+    /* ── PAGE ── */
+    .page { max-width:1120px; margin:0 auto; padding:1.5rem 1rem 4rem; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── CALCULATOR ── */
+    .calc-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; align-items:start; }
+    @media (max-width:680px) { .calc-grid { grid-template-columns:1fr; } }
+
+    .card { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .card-header { padding:.9rem 1.25rem .8rem; border-bottom:1px solid var(--gray-100); display:flex; align-items:center; gap:.65rem; }
+    .card-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .ci-green  { background:var(--green-light); }
+    .ci-blue   { background:var(--blue-light); }
+    .card-title { font-size:.92rem; font-weight:700; color:var(--gray-800); }
+    .card-sub   { font-size:.76rem; color:var(--gray-400); margin-top:1px; }
+    .card-body  { padding:1.25rem; }
+
+    .field { margin-bottom:1.1rem; }
+    .field:last-child { margin-bottom:0; }
+    .field-label { display:block; font-size:.73rem; font-weight:700; color:var(--gray-500); margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.05em; }
+    .input-wrap { position:relative; }
+    .input-pre, .input-suf { position:absolute; top:50%; transform:translateY(-50%); font-size:.85rem; font-weight:700; color:var(--gray-400); pointer-events:none; }
+    .input-pre { left:12px; }
+    input[type=number] {
+      width:100%; border:2px solid var(--gray-200); border-radius:var(--radius-sm);
+      padding:.65rem 2.5rem; font-size:.95rem; color:var(--gray-800); background:var(--gray-50);
+      outline:none; transition:border-color var(--t), background var(--t), box-shadow var(--t);
+      -moz-appearance:textfield;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; }
+    input[type=number]:focus { border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+    input[type=text] {
+      width:100%; border:2px solid var(--gray-200); border-radius:var(--radius-sm);
+      padding:.55rem .9rem; font-size:.9rem; color:var(--gray-800); background:var(--gray-50);
+      outline:none; transition:border-color var(--t);
+    }
+    input[type=text]:focus { border-color:var(--green); background:#fff; }
+    .field-hint { margin-top:.3rem; font-size:.72rem; color:var(--gray-400); }
+    .sep { display:flex; align-items:center; gap:.6rem; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--gray-300); margin:.5rem 0 1rem; }
+    .sep::before, .sep::after { content:''; flex:1; height:1px; background:var(--gray-200); }
+
+    .result-empty { padding:2.5rem 1.25rem; text-align:center; color:var(--gray-400); }
+    .result-empty .ei { font-size:2.2rem; margin-bottom:.5rem; opacity:.35; }
+    .result-empty p { font-size:.82rem; }
+    .result-hero { padding:1.2rem 1.25rem; background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%); border-bottom:1px solid var(--gray-100); text-align:center; }
+    .rh-label { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--green); margin-bottom:.2rem; }
+    .rh-value { font-size:clamp(1.6rem,4vw,2.2rem); font-weight:900; color:var(--gray-900); letter-spacing:-.03em; line-height:1; }
+    .rh-sub   { font-size:.78rem; color:var(--gray-500); margin-top:.3rem; }
+    .rh-tag   { display:inline-block; background:rgba(22,163,74,.12); color:var(--green-dark); font-size:.68rem; font-weight:700; border-radius:999px; padding:2px 10px; margin-top:.4rem; }
+    .breakdown { padding:1rem 1.25rem; }
+    .bd-title { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--gray-400); margin-bottom:.5rem; }
+    .tier-row { display:grid; grid-template-columns:1fr auto auto; gap:.4rem; padding:.42rem .65rem; border-radius:7px; margin-bottom:2px; font-size:.82rem; align-items:center; }
+    .tier-row.t1 { background:#f0fdf4; }
+    .tier-row.t2 { background:#eff6ff; }
+    .tier-row.t3 { background:#fffbeb; }
+    .tier-row.dim { opacity:.3; }
+    .tr-label { font-weight:600; color:var(--gray-700); display:flex; align-items:center; gap:6px; }
+    .tr-units { color:var(--gray-400); font-size:.76rem; text-align:right; }
+    .tr-cost  { font-weight:700; color:var(--gray-800); text-align:right; min-width:72px; }
+    .pip { display:inline-block; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .pip-g { background:var(--green); }
+    .pip-b { background:var(--blue); }
+    .pip-a { background:var(--amber); }
+    .sum-rows { margin-top:.5rem; border-top:1px solid var(--gray-200); padding-top:.45rem; }
+    .sum-row { display:flex; justify-content:space-between; align-items:center; padding:.28rem 0; font-size:.82rem; color:var(--gray-600); }
+    .sum-row.vat { color:var(--gray-400); font-size:.75rem; }
+    .sum-row.total { font-weight:800; font-size:.95rem; color:var(--gray-900); border-top:2px solid var(--gray-200); margin-top:.35rem; padding-top:.45rem; }
+    .pay-sum { padding:.75rem 1.25rem; background:var(--blue-light); border-bottom:1px solid var(--gray-100); }
+    .ps-title { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--blue); margin-bottom:.45rem; }
+    .ps-row { display:flex; justify-content:space-between; font-size:.82rem; color:var(--gray-700); padding:.18rem 0; }
+    .ps-row.tot { font-weight:800; color:var(--gray-900); border-top:1px solid rgba(37,99,235,.15); margin-top:.25rem; padding-top:.3rem; }
+    .err-msg { padding:.9rem 1.25rem; background:var(--red-light); color:var(--red); font-size:.82rem; font-weight:600; border-radius:var(--radius-sm); margin:1rem; }
+
+    /* ── HOUSEHOLD ESTIMATOR ── */
+    .estimator-layout {
+      display: grid;
+      grid-template-columns: 1fr 330px;
+      gap: 1.25rem;
+      align-items: start;
+    }
+    /* Desktop: results panel sticky on right, always visible */
+    .summary-panel { position: sticky; top: 1rem; }
+
+    /* Mobile: flip order so summary shows FIRST above appliance grid */
+    @media (max-width: 900px) {
+      .estimator-layout {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+      }
+      .summary-panel {
+        order: -1;          /* results appear above the appliance grid */
+        position: static;   /* un-sticky on mobile */
+      }
+    }
+
+    .section-title { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--gray-400); margin-bottom:.75rem; display:flex; align-items:center; gap:.5rem; }
+    .section-title::after { content:''; flex:1; height:1px; background:var(--gray-200); }
+
+    .appliance-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(148px, 1fr)); gap:.7rem; }
+
+    /* ── APPLIANCE CARD ── */
+    .ap-card {
+      background:#fff; border: 2px solid var(--gray-200); border-radius: var(--radius);
+      padding: .95rem .85rem .8rem;
+      transition: border-color var(--t), box-shadow var(--t), transform .15s;
+      position:relative; user-select:none;
+    }
+    .ap-card:hover { border-color:var(--gray-300); transform:translateY(-1px); box-shadow:var(--shadow-md); }
+    .ap-card.active { border-color:var(--green); box-shadow:0 0 0 3px var(--green-glow), var(--shadow-md); transform:translateY(-2px); }
+    .ap-card.active .ap-name { color:var(--green-dark); }
+    .ap-emoji { font-size:1.9rem; display:block; margin-bottom:.4rem; transition:transform .2s; }
+    .ap-card.active .ap-emoji { transform:scale(1.12); }
+    .ap-name { font-size:.82rem; font-weight:700; color:var(--gray-700); margin-bottom:.1rem; }
+    .ap-default { font-size:.68rem; color:var(--gray-400); }
+
+    .qty-control { display:flex; align-items:center; margin-top:.65rem; background:var(--gray-100); border-radius:999px; overflow:hidden; height:30px; }
+    .qty-btn { width:30px; height:30px; border:none; background:transparent; color:var(--gray-600); font-size:1.1rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background var(--t), color var(--t); border-radius:999px; }
+    .qty-btn:hover { background:var(--gray-200); }
+    .qty-btn.plus:hover { background:var(--green-light); color:var(--green-dark); }
+    .qty-btn.minus:hover { background:var(--red-light); color:var(--red); }
+    .qty-num { flex:1; text-align:center; font-size:.88rem; font-weight:800; color:var(--gray-700); }
+    .qty-num.bump { animation:qtyBump .2s ease; }
+    @keyframes qtyBump { 0%,100% { transform:scale(1); } 50% { transform:scale(1.4); color:var(--green); } }
+
+    .ap-badge { position:absolute; top:8px; right:8px; width:20px; height:20px; background:var(--green); color:#fff; border-radius:50%; font-size:.65rem; font-weight:800; display:flex; align-items:center; justify-content:center; opacity:0; transform:scale(.5); transition:opacity .2s, transform .2s; }
+    .ap-card.active .ap-badge { opacity:1; transform:scale(1); }
+
+    .ap-settings { display:none; margin-top:.6rem; border-top:1px solid var(--gray-100); padding-top:.55rem; }
+    .ap-card.open .ap-settings { display:block; }
+    .ap-setting-row { display:flex; align-items:center; gap:.35rem; margin-bottom:.28rem; font-size:.7rem; color:var(--gray-500); font-weight:600; }
+    .ap-setting-row:last-child { margin-bottom:0; }
+    .ap-setting-row input { width:58px; border:1px solid var(--gray-200); border-radius:var(--radius-xs); padding:2px 5px; font-size:.7rem; text-align:right; background:var(--gray-50); color:var(--gray-700); -moz-appearance:textfield; outline:none; }
+    .ap-setting-row input::-webkit-inner-spin-button { -webkit-appearance:none; }
+    .ap-setting-row input:focus { border-color:var(--green); }
+    .ap-setting-row label { flex:1; }
+    .settings-toggle { font-size:.65rem; font-weight:700; color:var(--gray-400); cursor:pointer; text-align:center; margin-top:.45rem; display:block; text-transform:uppercase; letter-spacing:.05em; }
+    .settings-toggle:hover { color:var(--green); }
+
+    /* add-custom card */
+    .ap-card-add {
+      background: var(--gray-50); border: 2px dashed var(--gray-300); border-radius: var(--radius);
+      padding: .95rem .85rem; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; cursor:pointer; min-height:140px; gap:.4rem;
+      transition: border-color var(--t), background var(--t); color: var(--gray-400);
+    }
+    .ap-card-add:hover { border-color:var(--green); background:var(--green-light); color:var(--green-dark); }
+    .ap-card-add .add-icon { font-size:1.6rem; }
+    .ap-card-add .add-label { font-size:.78rem; font-weight:700; text-align:center; }
+
+    /* modal */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:1rem; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .modal-overlay.open { opacity:1; pointer-events:all; }
+    .modal { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow-lg); padding:1.5rem; width:100%; max-width:380px; transform:scale(.95); transition:transform .2s; }
+    .modal-overlay.open .modal { transform:scale(1); }
+    .modal h3 { font-size:1rem; font-weight:800; color:var(--gray-800); margin-bottom:1rem; }
+    .modal-field { margin-bottom:.85rem; }
+    .modal-field label { display:block; font-size:.72rem; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.3rem; }
+    .modal-row { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    .emoji-picker { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.4rem; }
+    .emoji-opt { font-size:1.3rem; cursor:pointer; padding:4px; border-radius:6px; border:2px solid transparent; transition:border-color .15s, background .15s; }
+    .emoji-opt:hover { background:var(--gray-100); }
+    .emoji-opt.selected { border-color:var(--green); background:var(--green-light); }
+    .modal-actions { display:flex; gap:.6rem; margin-top:1.1rem; }
+    .btn { cursor:pointer; border:none; border-radius:var(--radius-sm); padding:.6rem 1.2rem; font-size:.85rem; font-weight:700; transition:background var(--t), color var(--t); }
+    .btn-primary { background:var(--green); color:#fff; flex:1; }
+    .btn-primary:hover { background:var(--green-dark); }
+    .btn-ghost { background:var(--gray-100); color:var(--gray-600); }
+    .btn-ghost:hover { background:var(--gray-200); }
+    .btn-danger { cursor:pointer; border:none; background:var(--red-light); color:var(--red); font-size:.75rem; padding:.35rem .7rem; border-radius:var(--radius-xs); margin-top:.3rem; transition:background var(--t), color var(--t); }
+    .btn-danger:hover { background:var(--red); color:#fff; }
+    .modal-err { font-size:.78rem; color:var(--red); min-height:1.2em; margin-top:-.3rem; }
+
+    /* ── SUMMARY PANEL ── */
+    .est-result { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow-lg); overflow:hidden; }
+    .er-hero { background:linear-gradient(135deg,#052e16 0%,#064e3b 100%); padding:1.25rem; text-align:center; color:#fff; }
+    .er-label { font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#6ee7b7; margin-bottom:.15rem; }
+    .er-kwh { font-size:2.2rem; font-weight:900; letter-spacing:-.04em; line-height:1; }
+    .er-kwh span { font-size:1rem; font-weight:600; opacity:.7; margin-left:3px; }
+    .er-per { font-size:.8rem; color:rgba(255,255,255,.6); margin-top:.2rem; }
+    .er-cost-bar { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--gray-200); }
+    .er-cost-cell { background:#fff; padding:.7rem 1rem; text-align:center; }
+    .ecc-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--gray-400); margin-bottom:.1rem; }
+    .ecc-val { font-size:1.1rem; font-weight:800; color:var(--gray-900); letter-spacing:-.02em; line-height:1.2; }
+    .ecc-sub { font-size:.68rem; color:var(--gray-400); margin-top:2px; font-weight:600; }
+    .er-body { padding:.85rem 1rem; max-height:280px; overflow-y:auto; }
+    .er-list-title { font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--gray-400); margin-bottom:.5rem; }
+    .er-item { display:flex; align-items:center; gap:.55rem; padding:.32rem 0; border-bottom:1px solid var(--gray-100); font-size:.82rem; }
+    .er-item:last-child { border-bottom:none; }
+    .eri-name { flex:1; font-weight:600; color:var(--gray-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .eri-bar-wrap { width:50px; height:5px; background:var(--gray-200); border-radius:999px; overflow:hidden; flex-shrink:0; }
+    .eri-bar { height:100%; background:var(--green); border-radius:999px; transition:width .4s cubic-bezier(.4,0,.2,1); }
+    .eri-kwh { color:var(--gray-400); font-size:.75rem; min-width:52px; text-align:right; flex-shrink:0; }
+    .er-tariff-row { display:flex; align-items:center; gap:.5rem; padding:.5rem 1rem; background:var(--green-light); border-top:1px solid var(--gray-100); font-size:.74rem; color:var(--green-dark); font-weight:600; }
+    .er-empty { padding:2rem 1rem; text-align:center; color:var(--gray-400); }
+    .er-empty .ee-icon { font-size:2.5rem; opacity:.3; margin-bottom:.5rem; }
+    .er-empty p { font-size:.8rem; }
+
+    footer { text-align:center; padding:1.5rem; font-size:.75rem; color:var(--gray-400); border-top:1px solid var(--gray-200); }
+    footer a { color:var(--gray-500); }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-badge">⚡ REG Tariff Calculator</div>
+  <h1>Rwanda Energy Calculator</h1>
+  <p class="tagline">Calculate electricity costs, units, and household bills with full tier breakdown</p>
+  <div class="header-links">
+    <a href="https://www.reg.rw/customer-service/tariffs/" target="_blank" rel="noopener">Official REG Tariffs ↗</a>
+    <a href="https://rdjarbeng.com/rura-announces-revised-electricity-end-user-tariffs-effective-october-2025/" target="_blank" rel="noopener">2025 Tariff Announcement ↗</a>
+  </div>
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('calc')" id="tab-btn-calc"><span>🔢</span> Calculator</button>
+    <button class="tab-btn" onclick="showTab('estimator')" id="tab-btn-estimator"><span>🏠</span> Household Estimator</button>
+  </div>
+</header>
+
+<div class="tariff-bar">
+  <span class="tariff-bar-label">Tariff:</span>
+  <div class="tariff-pills">
+    <button class="tariff-pill active" id="pill-new" onclick="setTariff('new')">Oct 2025 <span class="badge">Current</span></button>
+    <button class="tariff-pill" id="pill-old" onclick="setTariff('old')">2020–2025</button>
+  </div>
+</div>
+<div class="rate-strip">
+  <span class="rate-label">Active rates:</span>
+  <span class="rate-tag rt-1">● <span id="rt1">Tier 1 · 0–20 kWh · 89 RWF/kWh</span></span>
+  <span class="rate-tag rt-2">● <span id="rt2">Tier 2 · 21–50 kWh · 310 RWF/kWh</span></span>
+  <span class="rate-tag rt-3">● <span id="rt3">Tier 3 · 51+ kWh · 369 RWF/kWh</span></span>
+  <span class="rate-tag rt-vat">VAT 18%</span>
+</div>
+
+<div class="page">
+
+  <!-- TAB: CALCULATOR -->
+  <div class="tab-panel active" id="panel-calc">
+    <div class="calc-grid">
+      <div style="display:flex;flex-direction:column;gap:1.1rem;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon ci-green">💰</div>
+            <div><div class="card-title">Amount → Units</div><div class="card-sub">How many kWh can you buy?</div></div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <label class="field-label">Amount paid</label>
+              <div class="input-wrap">
+                <span class="input-pre">RWF</span>
+                <input type="number" id="amount-input" min="0" step="1" placeholder="e.g. 5000" oninput="recalcUnits()" />
+              </div>
+              <div class="field-hint">Total amount you want to spend on electricity</div>
+            </div>
+            <div class="sep">Optional — top-up</div>
+            <div class="field">
+              <label class="field-label">Previous balance already paid</label>
+              <div class="input-wrap">
+                <span class="input-pre">RWF</span>
+                <input type="number" id="initial-amount-input" min="0" step="1" placeholder="e.g. 2000" oninput="recalcUnits()" />
+              </div>
+              <div class="field-hint">Amount already paid earlier this month — affects tier pricing</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon ci-blue">⚡</div>
+            <div><div class="card-title">Units → Cost</div><div class="card-sub">How much will you pay?</div></div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <label class="field-label">Units consumed</label>
+              <div class="input-wrap">
+                <span class="input-pre">kWh</span>
+                <input type="number" id="units-input" min="0" step="0.1" placeholder="e.g. 45" oninput="recalcCost()" />
+              </div>
+              <div class="field-hint">Number of kilowatt-hours you have used</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.1rem;">
+        <div class="card">
+          <div class="card-header"><div class="card-icon ci-green">📊</div><div class="card-title">Units Result</div></div>
+          <div id="units-result"><div class="result-empty"><div class="ei">💰</div><p>Enter an amount above to see how many units you'll get</p></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-icon ci-blue">📊</div><div class="card-title">Cost Result</div></div>
+          <div id="cost-result"><div class="result-empty"><div class="ei">⚡</div><p>Enter units above to see the total cost</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: HOUSEHOLD ESTIMATOR -->
+  <div class="tab-panel" id="panel-estimator">
+    <div class="estimator-layout">
+      <!-- Results panel: sticky on desktop, appears FIRST on mobile via order:-1 -->
+      <div class="summary-panel">
+        <div class="est-result" id="est-result">
+          <div class="er-empty"><div class="ee-icon">🏠</div><p>Add appliances to estimate your monthly bill</p></div>
+        </div>
+      </div>
+      <!-- Appliance grid -->
+      <div>
+        <div class="section-title">Select your appliances</div>
+        <div class="appliance-grid" id="appliance-grid"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CUSTOM APPLIANCE MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <h3>Add Custom Appliance</h3>
+    <div class="modal-field">
+      <label>Name</label>
+      <input type="text" id="custom-name" placeholder="e.g. Pool Pump" maxlength="30" />
+    </div>
+    <div class="modal-field">
+      <label>Choose an icon</label>
+      <div class="emoji-picker" id="emoji-picker"></div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Wattage (W)</label>
+        <input type="number" id="custom-watts" min="1" step="1" placeholder="e.g. 300" />
+      </div>
+      <div class="modal-field">
+        <label>Hours / day</label>
+        <input type="number" id="custom-hours" min="0.1" max="24" step="0.1" placeholder="e.g. 4" />
+      </div>
+    </div>
+    <div class="modal-err" id="modal-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addCustomAppliance()">Add Appliance</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Based on <a href="https://www.reg.rw/customer-service/tariffs/" target="_blank">REG official tariffs</a>. VAT 18% included. Estimates assume 30-day months.</p>
+</footer>
+
+<script>
+// ══════════════════════════════════ DATA
+const TARIFFS = {
+  new: { rates:[89,310,369], limits:[20,50], label:'October 2025 Tariffs' },
+  old: { rates:[89,212,249], limits:[15,50], label:'2020–2025 Tariffs' }
+};
+const VAT = 0.18;
+let currentTariff = 'new';
+
+// Appliance list — removed: kettle, security light, desktop PC, stand fan, AC
+// Added: monitor (replaces desktop PC)
+const DEFAULT_APPLIANCES = [
+  { id:'fridge',   emoji:'🧊', name:'Fridge',          watts:150,  hours:24   },
+  { id:'tv',       emoji:'📺', name:'Television',       watts:100,  hours:5    },
+  { id:'laptop',   emoji:'💻', name:'Laptop',           watts:65,   hours:8    },
+  { id:'monitor',  emoji:'🖥️', name:'Monitor',          watts:27,   hours:8    },
+  { id:'bulb',     emoji:'💡', name:'LED Bulb',         watts:10,   hours:6    },
+  { id:'phone',    emoji:'📱', name:'Phone Charger',    watts:10,   hours:8    },
+  { id:'router',   emoji:'📡', name:'WiFi Router',      watts:10,   hours:24   },
+  { id:'micro',    emoji:'📦', name:'Microwave',        watts:1200, hours:0.25 },
+  { id:'iron',     emoji:'👔', name:'Electric Iron',    watts:1000, hours:0.14 },
+  { id:'wash',     emoji:'🧺', name:'Washing Machine',  watts:500,  hours:0.43 },
+  { id:'heater',   emoji:'🚿', name:'Water Heater',     watts:3000, hours:0.33 },
+];
+
+let APPLIANCES = DEFAULT_APPLIANCES.map(a => ({...a}));
+
+// State: qty, watts, hours per appliance
+const state = {};
+APPLIANCES.forEach(a => { state[a.id] = { qty:0, watts:a.watts, hours:a.hours }; });
+
+// Pre-filled defaults
+state['fridge'].qty = 1;
+state['router'].qty = 1;
+state['bulb'].qty   = 4;
+
+// ══════════════════════════════════ HELPERS
+function round2(v)         { return Math.round(v * 100) / 100; }
+function fmt(n, dec=2)     { return Number(n).toLocaleString('en-RW', { minimumFractionDigits:dec, maximumFractionDigits:dec }); }
+
+/** Show hours as "Xh/day" or "X min/day" for sub-hour values */
+function fmtHours(h) {
+  if (h >= 1) {
+    const rounded = Math.round(h * 10) / 10;
+    return rounded === 24 ? '24h/day (always on)' : rounded + 'h/day';
+  }
+  const mins = Math.round(h * 60);
+  return mins + ' min/day';
+}
+
+// ══════════════════════════════════ TARIFF
+function setTariff(t) {
+  currentTariff = t;
+  document.getElementById('pill-new').classList.toggle('active', t==='new');
+  document.getElementById('pill-old').classList.toggle('active', t==='old');
+  updateRateStrip();
+  recalcUnits();
+  recalcCost();
+  renderEstimatorResult();
+}
+function updateRateStrip() {
+  const T=TARIFFS[currentTariff]; const [ra,rb,rc]=T.rates; const [l1,l2]=T.limits;
+  document.getElementById('rt1').textContent=`Tier 1 · 0–${l1} kWh · ${ra} RWF/kWh`;
+  document.getElementById('rt2').textContent=`Tier 2 · ${l1+1}–${l2} kWh · ${rb} RWF/kWh`;
+  document.getElementById('rt3').textContent=`Tier 3 · ${l2+1}+ kWh · ${rc} RWF/kWh`;
+}
+
+// ══════════════════════════════════ TABS
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('tab-btn-'+id).classList.add('active');
+}
+
+// ══════════════════════════════════ CORE MATH
+function costFromUnits(units, tariffType) {
+  const T=TARIFFS[tariffType]; const [ra,rb,rc]=T.rates; const [l1,l2]=T.limits;
+  if(units<0) throw new Error('Negative units');
+  const t1=Math.min(units,l1), t2=units<=l1?0:Math.min(units-l1,l2-l1), t3=units<=l2?0:units-l2;
+  const t1c=t1*ra, t2c=t2*rb, t3c=t3*rc;
+  const sub=t1c+t2c+t3c; const vat=sub*VAT;
+  return { tier1_units:t1,tier2_units:t2,tier3_units:t3,
+           tier1_cost:t1c,tier2_cost:t2c,tier3_cost:t3c,
+           subtotal:sub, vat_amount:vat, total:round2(sub+vat),
+           total_units:units, tariff_rates:T.rates, tariff_limits:T.limits };
+}
+
+function unitsFromAmount(amount, tariffType) {
+  const T=TARIFFS[tariffType]; const [ra,rb,rc]=T.rates; const [l1,l2]=T.limits;
+  const empty={tier1_units:0,tier2_units:0,tier3_units:0,tier1_cost:0,tier2_cost:0,tier3_cost:0,subtotal:0,vat_amount:0,total:0,total_units:0,tariff_rates:T.rates,tariff_limits:T.limits};
+  if(amount<=0) return empty;
+  const sub=amount/(1+VAT); const T1max=l1*ra; const T2max=T1max+(l2-l1)*rb;
+  let t1,t2,t3;
+  if(sub<=T1max)      { t1=sub/ra;          t2=0;           t3=0; }
+  else if(sub<=T2max) { t1=l1; t2=(sub-T1max)/rb; t3=0; }
+  else                { t1=l1; t2=l2-l1;    t3=(sub-T2max)/rc; }
+  const t1c=t1*ra,t2c=t2*rb,t3c=t3*rc; const cSub=t1c+t2c+t3c; const vatAmt=cSub*VAT;
+  return { tier1_units:round2(t1),tier2_units:round2(t2),tier3_units:round2(t3),
+           tier1_cost:round2(t1c),tier2_cost:round2(t2c),tier3_cost:round2(t3c),
+           subtotal:round2(cSub),vat_amount:round2(vatAmt),total:round2(amount),
+           total_units:round2(t1+t2+t3), tariff_rates:T.rates, tariff_limits:T.limits };
+}
+
+function unitsFromAmountOffset(amount, existingUnits, tariffType) {
+  const T=TARIFFS[tariffType]; const [ra,rb,rc]=T.rates; const [l1,l2]=T.limits;
+  const empty={tier1_units:0,tier2_units:0,tier3_units:0,tier1_cost:0,tier2_cost:0,tier3_cost:0,subtotal:0,vat_amount:0,total:0,total_units:0,tariff_rates:T.rates,tariff_limits:T.limits};
+  if(amount<=0) return empty;
+  const sub=amount/(1+VAT);
+  const remT1=Math.max(0,l1-existingUnits);
+  const remT2=existingUnits<l2?Math.max(0,l2-Math.max(existingUnits,l1)):0;
+  let t1n=0,t2n=0,t3n=0,rem=sub;
+  if(remT1>0&&rem>0){t1n=Math.min(remT1,rem/ra);rem-=t1n*ra;}
+  if(remT2>0&&rem>0){t2n=Math.min(remT2,rem/rb);rem-=t2n*rb;}
+  if(rem>0) t3n=rem/rc;
+  const t1c=t1n*ra,t2c=t2n*rb,t3c=t3n*rc; const cSub=t1c+t2c+t3c; const vatAmt=cSub*VAT;
+  return { tier1_units:round2(t1n),tier2_units:round2(t2n),tier3_units:round2(t3n),
+           tier1_cost:round2(t1c),tier2_cost:round2(t2c),tier3_cost:round2(t3c),
+           subtotal:round2(cSub),vat_amount:round2(vatAmt),total:round2(amount),
+           total_units:round2(t1n+t2n+t3n), tariff_rates:T.rates, tariff_limits:T.limits };
+}
+
+// ══════════════════════════════════ RENDER BREAKDOWN
+function renderBreakdown(bd) {
+  const [ra,rb,rc]=bd.tariff_rates; const [l1,l2]=bd.tariff_limits;
+  const row=(cls,pip,label,units,cost)=>`
+    <div class="tier-row ${cls}${units>0?'':' dim'}">
+      <span class="tr-label"><span class="pip ${pip}"></span>${label}</span>
+      <span class="tr-units">${fmt(units)} kWh</span>
+      <span class="tr-cost">${fmt(cost)} RWF</span>
+    </div>`;
+  return `<div class="breakdown">
+    <div class="bd-title">Tier Breakdown</div>
+    ${row('t1','pip-g',`Tier 1 &nbsp;(0–${l1} kWh @ ${ra})`,bd.tier1_units,bd.tier1_cost)}
+    ${row('t2','pip-b',`Tier 2 &nbsp;(${l1+1}–${l2} kWh @ ${rb})`,bd.tier2_units,bd.tier2_cost)}
+    ${row('t3','pip-a',`Tier 3 &nbsp;(${l2+1}+ kWh @ ${rc})`,bd.tier3_units,bd.tier3_cost)}
+    <div class="sum-rows">
+      <div class="sum-row"><span>Subtotal (before VAT)</span><span>${fmt(bd.subtotal)} RWF</span></div>
+      <div class="sum-row vat"><span>VAT (18%)</span><span>+ ${fmt(bd.vat_amount)} RWF</span></div>
+      <div class="sum-row total"><span>Total</span><span>${fmt(bd.total)} RWF</span></div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════ CALCULATOR: UNITS
+function recalcUnits() {
+  const amtRaw=document.getElementById('amount-input').value.trim();
+  const initRaw=document.getElementById('initial-amount-input').value.trim();
+  const amt=amtRaw!==''?parseFloat(amtRaw):0;
+  const init=initRaw!==''?parseFloat(initRaw):0;
+  const box=document.getElementById('units-result');
+  if((amtRaw===''||isNaN(amt))&&(initRaw===''||isNaN(init))){
+    box.innerHTML=`<div class="result-empty"><div class="ei">💰</div><p>Enter an amount above to see how many units you'll get</p></div>`;return;
+  }
+  if(amt<0||init<0){box.innerHTML=`<div class="err-msg">Amounts cannot be negative.</div>`;return;}
+  if(amt===0&&init===0){box.innerHTML=`<div class="result-empty"><div class="ei">💰</div><p>Enter a non-zero amount</p></div>`;return;}
+  try{
+    const label=TARIFFS[currentTariff].label;
+    if(init>0&&amt>0){
+      const initBd=unitsFromAmount(init,currentTariff);
+      const newBd=unitsFromAmountOffset(amt,initBd.total_units,currentTariff);
+      const totalU=round2(initBd.total_units+newBd.total_units);
+      const totalA=round2(init+amt);
+      const combBd=unitsFromAmount(totalA,currentTariff);
+      box.innerHTML=`
+        <div class="result-hero">
+          <div class="rh-label">Total units</div>
+          <div class="rh-value">${fmt(totalU)} kWh</div>
+          <div class="rh-sub">${fmt(init)} + ${fmt(amt)} = ${fmt(totalA)} RWF</div>
+          <div class="rh-tag">${label}</div>
+        </div>
+        <div class="pay-sum">
+          <div class="ps-title">Payment breakdown</div>
+          <div class="ps-row"><span>Previous balance (${fmt(init)} RWF)</span><span>${fmt(initBd.total_units)} kWh</span></div>
+          <div class="ps-row"><span>New payment (${fmt(amt)} RWF)</span><span>+ ${fmt(newBd.total_units)} kWh</span></div>
+          <div class="ps-row tot"><span>Total (${fmt(totalA)} RWF)</span><span>${fmt(totalU)} kWh</span></div>
+        </div>
+        ${renderBreakdown(combBd)}`;
+    }else{
+      const eff=amt>0?amt:init;
+      const bd=unitsFromAmount(eff,currentTariff);
+      box.innerHTML=`
+        <div class="result-hero">
+          <div class="rh-label">You will get</div>
+          <div class="rh-value">${fmt(bd.total_units)} kWh</div>
+          <div class="rh-sub">for ${fmt(eff)} RWF</div>
+          <div class="rh-tag">${label}</div>
+        </div>
+        ${renderBreakdown(bd)}`;
+    }
+  }catch(e){box.innerHTML=`<div class="err-msg">Invalid input.</div>`;}
+}
+
+// ══════════════════════════════════ CALCULATOR: COST
+function recalcCost() {
+  const raw=document.getElementById('units-input').value.trim();
+  const units=raw!==''?parseFloat(raw):NaN;
+  const box=document.getElementById('cost-result');
+  if(raw===''||isNaN(units)){box.innerHTML=`<div class="result-empty"><div class="ei">⚡</div><p>Enter units above to see the total cost</p></div>`;return;}
+  if(units<0){box.innerHTML=`<div class="err-msg">Units cannot be negative.</div>`;return;}
+  if(units===0){box.innerHTML=`<div class="result-empty"><div class="ei">⚡</div><p>Enter a non-zero number of units</p></div>`;return;}
+  try{
+    const bd=costFromUnits(units,currentTariff);
+    const label=TARIFFS[currentTariff].label;
+    box.innerHTML=`
+      <div class="result-hero">
+        <div class="rh-label">Cost</div>
+        <div class="rh-value">${fmt(bd.total)} RWF</div>
+        <div class="rh-sub">for ${fmt(units,2)} kWh consumed</div>
+        <div class="rh-tag">${label}</div>
+      </div>
+      ${renderBreakdown(bd)}`;
+  }catch(e){box.innerHTML=`<div class="err-msg">Invalid input.</div>`;}
+}
+
+// ══════════════════════════════════ ESTIMATOR: BUILD GRID
+function buildApplianceGrid() {
+  const grid=document.getElementById('appliance-grid');
+  grid.innerHTML='';
+  APPLIANCES.forEach(a=>{
+    const s=state[a.id];
+    const card=document.createElement('div');
+    card.className='ap-card'+(s.qty>0?' active':'');
+    card.id='ap-card-'+a.id;
+    card.innerHTML=`
+      <div class="ap-badge" id="ap-badge-${a.id}">${s.qty}</div>
+      <span class="ap-emoji">${a.emoji}</span>
+      <div class="ap-name">${a.name}</div>
+      <div class="ap-default" id="ap-default-${a.id}">${s.watts}W · ${fmtHours(s.hours)}</div>
+      <div class="qty-control">
+        <button class="qty-btn minus" onclick="changeQty('${a.id}',-1,event)">−</button>
+        <span class="qty-num" id="qty-${a.id}">${s.qty}</span>
+        <button class="qty-btn plus"  onclick="changeQty('${a.id}', 1,event)">+</button>
+      </div>
+      <span class="settings-toggle" onclick="toggleSettings('${a.id}',event)">⚙ Edit wattage / hours</span>
+      <div class="ap-settings" id="ap-settings-${a.id}">
+        <div class="ap-setting-row">
+          <label>Watts:</label>
+          <input type="number" id="watts-${a.id}" value="${s.watts}" min="1" step="1"
+            oninput="updateSetting('${a.id}','watts',this.value)" />
+          <span>W</span>
+        </div>
+        <div class="ap-setting-row">
+          <label>Hours/day:</label>
+          <input type="number" id="hours-${a.id}" value="${s.hours}" min="0.1" max="24" step="0.1"
+            oninput="updateSetting('${a.id}','hours',this.value)" />
+          <span>h</span>
+        </div>
+        ${a.isCustom?`<button class="btn-danger" onclick="removeCustom('${a.id}',event)">Remove appliance</button>`:''}
+      </div>`;
+    grid.appendChild(card);
+  });
+  // Add-custom button
+  const addCard=document.createElement('div');
+  addCard.className='ap-card-add';
+  addCard.onclick=openModal;
+  addCard.innerHTML=`<span class="add-icon">＋</span><span class="add-label">Add custom appliance</span>`;
+  grid.appendChild(addCard);
+}
+
+function toggleSettings(id,e) {
+  e.stopPropagation();
+  document.getElementById('ap-card-'+id).classList.toggle('open');
+}
+
+function updateSetting(id,field,val) {
+  const v=parseFloat(val);
+  if(!isNaN(v)&&v>0){
+    state[id][field]=v;
+    const defEl=document.getElementById('ap-default-'+id);
+    if(defEl) defEl.textContent=`${state[id].watts}W · ${fmtHours(state[id].hours)}`;
+    renderEstimatorResult();
+  }
+}
+
+function changeQty(id,delta,e) {
+  e.stopPropagation();
+  const s=state[id];
+  s.qty=Math.max(0,s.qty+delta);
+  const numEl=document.getElementById('qty-'+id);
+  const badgeEl=document.getElementById('ap-badge-'+id);
+  const card=document.getElementById('ap-card-'+id);
+  numEl.textContent=s.qty;
+  badgeEl.textContent=s.qty;
+  numEl.classList.remove('bump');
+  void numEl.offsetWidth;
+  numEl.classList.add('bump');
+  card.classList.toggle('active',s.qty>0);
+  renderEstimatorResult();
+}
+
+// ══════════════════════════════════ ESTIMATOR: RENDER RESULT
+function renderEstimatorResult() {
+  const box=document.getElementById('est-result');
+  const active=APPLIANCES.filter(a=>state[a.id]&&state[a.id].qty>0);
+  if(active.length===0){
+    box.innerHTML=`<div class="er-empty"><div class="ee-icon">🏠</div><p>Add appliances to estimate your monthly electricity bill</p></div>`;
+    return;
+  }
+  const items=active.map(a=>{
+    const s=state[a.id];
+    const kwh=round2(s.qty*s.watts/1000*s.hours*30);
+    return{...a,qty:s.qty,kwh};
+  });
+  const totalKwh=round2(items.reduce((acc,i)=>acc+i.kwh,0));
+  const bd=costFromUnits(totalKwh,currentTariff);
+  const maxKwh=Math.max(...items.map(i=>i.kwh),0.001);
+  const label=TARIFFS[currentTariff].label;
+  const dailyKwh=round2(totalKwh/30);
+
+  const listHtml=items.sort((a,b)=>b.kwh-a.kwh).map(item=>{
+    const pct=Math.round(item.kwh/maxKwh*100);
+    return`<div class="er-item">
+      <span class="eri-name">${item.emoji} ${item.name}${item.qty>1?' ×'+item.qty:''}</span>
+      <div class="eri-bar-wrap"><div class="eri-bar" style="width:${pct}%"></div></div>
+      <span class="eri-kwh">${fmt(item.kwh,1)} kWh</span>
+    </div>`;
+  }).join('');
+
+  box.innerHTML=`
+    <div class="er-hero">
+      <div class="er-label">Estimated monthly consumption</div>
+      <div class="er-kwh">${fmt(totalKwh,1)}<span>kWh</span></div>
+      <div class="er-per">per month · 30 days</div>
+    </div>
+    <div class="er-cost-bar">
+      <div class="er-cost-cell">
+        <div class="ecc-label">Monthly Bill</div>
+        <div class="ecc-val">${fmt(bd.total,0)} RWF</div>
+        <div class="ecc-sub">${fmt(totalKwh,1)} kWh/month</div>
+      </div>
+      <div class="er-cost-cell">
+        <div class="ecc-label">Daily Average</div>
+        <div class="ecc-val">${fmt(bd.total/30,0)} RWF</div>
+        <div class="ecc-sub">${fmt(dailyKwh,2)} kWh/day</div>
+      </div>
+    </div>
+    <div class="er-body">
+      <div class="er-list-title">Consumption by appliance</div>
+      ${listHtml}
+    </div>
+    <div class="er-tariff-row">⚡ Using ${label}</div>`;
+}
+
+// ══════════════════════════════════ CUSTOM APPLIANCE MODAL
+const EMOJI_OPTIONS=['🔌','💡','🌡️','🖨️','🎮','🎵','📷','🛁','🍳','🥘','🍞','🌀','🔦','🏋️','🎸','📻','💈','🧹','🔧','⚙️','🌊','🔥','💧','🏠','🏭','⚡','🌱','🌞','🖥️','📠'];
+let selectedEmoji='🔌';
+
+function openModal() {
+  selectedEmoji='🔌';
+  document.getElementById('custom-name').value='';
+  document.getElementById('custom-watts').value='';
+  document.getElementById('custom-hours').value='';
+  document.getElementById('modal-err').textContent='';
+  const picker=document.getElementById('emoji-picker');
+  picker.innerHTML=EMOJI_OPTIONS.map(e=>`<span class="emoji-opt${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}',this)">${e}</span>`).join('');
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('custom-name').focus(),150);
+}
+
+function closeModal(e) {
+  if(e&&e.target!==document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function selectEmoji(emoji,el) {
+  selectedEmoji=emoji;
+  document.querySelectorAll('.emoji-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function addCustomAppliance() {
+  const name=document.getElementById('custom-name').value.trim();
+  const watts=parseFloat(document.getElementById('custom-watts').value);
+  const hours=parseFloat(document.getElementById('custom-hours').value);
+  const errEl=document.getElementById('modal-err');
+  if(!name){errEl.textContent='Please enter a name.';return;}
+  if(!watts||watts<=0){errEl.textContent='Enter a valid wattage.';return;}
+  if(!hours||hours<=0){errEl.textContent='Enter valid hours per day.';return;}
+  errEl.textContent='';
+  const id='custom_'+Date.now();
+  APPLIANCES.push({id,emoji:selectedEmoji,name,watts,hours,isCustom:true});
+  state[id]={qty:1,watts,hours};
+  document.getElementById('modal-overlay').classList.remove('open');
+  buildApplianceGrid();
+  renderEstimatorResult();
+}
+
+function removeCustom(id,e) {
+  e.stopPropagation();
+  APPLIANCES=APPLIANCES.filter(a=>a.id!==id);
+  delete state[id];
+  buildApplianceGrid();
+  renderEstimatorResult();
+}
+
+// ══════════════════════════════════ INIT
+updateRateStrip();
+buildApplianceGrid();
+renderEstimatorResult();
+</script>
+</body>
+</html>
