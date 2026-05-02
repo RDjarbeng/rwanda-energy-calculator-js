@@ -614,7 +614,7 @@ let currentTariff = 'new';
 // Appliance list — removed: kettle, security light, desktop PC, stand fan, AC
 // Added: monitor (replaces desktop PC)
 const DEFAULT_APPLIANCES = [
-  { id:'fridge',   emoji:'🧊', name:'Fridge',          watts:150,  hours:24   },
+  { id:'fridge',   emoji:'🧊', name:'Fridge',          watts:21,   hours:24   },
   { id:'tv',       emoji:'📺', name:'Television',       watts:100,  hours:5    },
   { id:'laptop',   emoji:'💻', name:'Laptop',           watts:65,   hours:8    },
   { id:'monitor',  emoji:'🖥️', name:'Monitor',          watts:27,   hours:8    },
@@ -854,12 +854,12 @@ function buildApplianceGrid() {
       </div>`;
     grid.appendChild(card);
   });
-  // Add-custom button
+  // Add-custom button — prepend so it sits on the top row
   const addCard=document.createElement('div');
   addCard.className='ap-card-add';
   addCard.onclick=openModal;
   addCard.innerHTML=`<span class="add-icon">＋</span><span class="add-label">Add custom appliance</span>`;
-  grid.appendChild(addCard);
+  grid.insertBefore(addCard, grid.firstChild);
 }
 
 function toggleSettings(id,e) {
