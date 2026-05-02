@@ -371,6 +371,32 @@
     .chart-svg { width:100%; display:block; }
     .warn-box { padding:.75rem 1rem; background:var(--red-light); border-radius:var(--radius-sm); color:var(--red); font-size:.82rem; font-weight:600; margin:.75rem 1.25rem; }
     .info-box  { padding:.75rem 1rem; background:var(--blue-light); border-radius:var(--radius-sm); color:var(--blue); font-size:.82rem; font-weight:600; margin:.75rem 1.25rem; }
+
+    /* share button + toast */
+    .share-btn {
+      display:flex; align-items:center; gap:.4rem; margin-top:.85rem;
+      padding:.5rem 1.1rem; font-size:.8rem; font-weight:700; border-radius:20px;
+      border:1.5px solid var(--gray-200); background:var(--gray-50); color:var(--gray-600);
+      cursor:pointer; transition:all var(--t); letter-spacing:.01em;
+    }
+    .share-btn:hover { border-color:var(--green); background:var(--green-light); color:var(--green-dark); }
+    .share-btn:active { transform:scale(.97); }
+    #share-toast {
+      position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(10px);
+      background:var(--gray-800); color:#fff; padding:.55rem 1.2rem; border-radius:20px;
+      font-size:.8rem; font-weight:600; opacity:0; pointer-events:none;
+      transition:opacity .2s, transform .2s; z-index:9999;
+    }
+    #share-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    .date-step-row { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.45rem; }
+    .date-step-btn {
+      padding:.28rem .65rem; font-size:.75rem; font-weight:700; border-radius:20px;
+      border:1.5px solid var(--gray-200); background:var(--gray-50); color:var(--gray-600);
+      cursor:pointer; transition:all var(--t); letter-spacing:.01em; line-height:1.4;
+    }
+    .date-step-btn:hover { border-color:var(--green); background:var(--green-light); color:var(--green-dark); }
+    .date-step-btn:active { transform:scale(.95); }
   </style>
 </head>
 <body>
@@ -504,6 +530,12 @@
           <div class="field">
             <label class="field-label">Date purchased</label>
             <input type="date" id="tr-date" oninput="recalcTracker()" />
+            <div class="date-step-row">
+              <button class="date-step-btn" onclick="stepDate(-1)">−1 day</button>
+              <button class="date-step-btn" onclick="stepDate(-7)">−7 days</button>
+              <button class="date-step-btn" onclick="stepDate(-30)">−30 days</button>
+              <button class="date-step-btn" onclick="stepDate('month')">−1 month</button>
+            </div>
             <div class="field-hint">The day you bought those units</div>
           </div>
           <div class="field">
@@ -966,6 +998,24 @@ function removeCustom(id,e) {
   renderEstimatorResult();
 }
 
+// ══════════════════════════════════ DATE STEP HELPER
+function stepDate(delta) {
+  const el = document.getElementById('tr-date');
+  const base = el.value ? new Date(el.value + 'T00:00:00') : new Date();
+  let d;
+  if (delta === 'month') {
+    d = new Date(base);
+    d.setMonth(d.getMonth() - 1);
+  } else {
+    d = new Date(base.getTime() + delta * 86400000);
+  }
+  // clamp to today
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (d > today) d = today;
+  el.valueAsDate = d;
+  recalcTracker();
+}
+
 // ══════════════════════════════════ USAGE TRACKER
 
 function recalcTracker() {
@@ -1057,6 +1107,7 @@ function recalcTracker() {
             <div class="stat-sub">since ${fmtDate(purchaseDate)}</div>
           </div>
         </div>
+        <button class="share-btn" onclick="shareTracker()">🔗 Share these results</button>
       </div>
     </div>`;
 
@@ -1157,12 +1208,66 @@ function renderTrackerChart(purchased, purchaseDate, remaining, dailyRate, today
   document.getElementById('tracker-chart').innerHTML = s;
 }
 
+// ══════════════════════════════════ SHARE / URL HASH
+
+function shareTracker() {
+  const p = document.getElementById('tr-purchased').value;
+  const d = document.getElementById('tr-date').value;
+  const r = document.getElementById('tr-remaining').value;
+  if (!p || !d || !r) return;
+  const hash = '#tracker=' + encodeURIComponent([p, d, r].join(','));
+  const url  = location.href.split('#')[0] + hash;
+  navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => {
+    // Fallback: select a temp input
+    const tmp = document.createElement('input');
+    tmp.value = url;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    showToast('Link copied!');
+  });
+  // Also update the URL bar without reloading
+  history.replaceState(null, '', url);
+}
+
+function showToast(msg) {
+  let t = document.getElementById('share-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'share-toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function loadTrackerFromHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#tracker=')) return;
+  try {
+    const parts = decodeURIComponent(hash.slice('#tracker='.length)).split(',');
+    if (parts.length < 3) return;
+    const [p, d, r] = parts;
+    document.getElementById('tr-purchased').value = p;
+    document.getElementById('tr-date').value       = d;
+    document.getElementById('tr-remaining').value  = r;
+    // Switch to the tracker tab automatically
+    showTab('tracker');
+    recalcTracker();
+  } catch(e) {}
+}
+
 // ══════════════════════════════════ INIT
 updateRateStrip();
 buildApplianceGrid();
 renderEstimatorResult();
 // Default tracker date to today
 document.getElementById('tr-date').valueAsDate = new Date();
+// Restore from shared URL if present
+loadTrackerFromHash();
 </script>
 </body>
 </html>
