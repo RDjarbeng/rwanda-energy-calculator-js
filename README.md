@@ -2,6 +2,14 @@
 
 A fast, fully static web app for calculating electricity costs based on [Rwanda Energy Group (REG)](https://www.reg.rw/) tariffs. No server, no build step, no dependencies — pure HTML, CSS, and JavaScript.
 
+> **Original calculator logic** by [Ian Akotey](https://github.com/ianakotey) · **UI** by [Richard Djarbeng (RDjarbeng)](https://github.com/RDjarbeng)
+
+## Related
+
+- 🐍 **Python version:** [rwanda\_energy\_calculator](https://github.com/RDjarbeng/rwanda_energy_calculator) — the original FastHTML/Python implementation this JS version is based on
+
+---
+
 ## Features
 
 ### ⚡ Calculator
@@ -23,6 +31,8 @@ A fast, fully static web app for calculating electricity costs based on [Rwanda 
 - Fully responsive — works on desktop and mobile
 - Real-time calculations — results update as you type or adjust quantities
 
+---
+
 ## Tariff Structure
 
 ### October 2025 (current)
@@ -42,6 +52,8 @@ A fast, fully static web app for calculating electricity costs based on [Rwanda 
 VAT of 18% applies to all tiers.
 
 **Sources:** [REG official tariffs](https://www.reg.rw/customer-service/tariffs/) · [RURA October 2025 announcement](https://rdjarbeng.com/rura-announces-revised-electricity-end-user-tariffs-effective-october-2025/)
+
+---
 
 ## Tech
 
