@@ -340,6 +340,37 @@
 
     footer { text-align:center; padding:1.5rem; font-size:.75rem; color:var(--gray-400); border-top:1px solid var(--gray-200); }
     footer a { color:var(--gray-500); }
+    footer .credit { margin-top:.5rem; font-size:.72rem; color:var(--gray-400); }
+    footer .credit a { color:var(--gray-500); font-weight:600; }
+
+    /* ── TRACKER ── */
+    .tracker-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; align-items:start; }
+    @media (max-width:680px) { .tracker-grid { grid-template-columns:1fr; } }
+
+    input[type=date] {
+      width:100%; border:2px solid var(--gray-200); border-radius:var(--radius-sm);
+      padding:.65rem .9rem; font-size:.95rem; color:var(--gray-800); background:var(--gray-50);
+      outline:none; transition:border-color var(--t);
+    }
+    input[type=date]:focus { border-color:var(--green); background:#fff; box-shadow:0 0 0 3px rgba(22,163,74,.1); }
+
+    .tracker-stats { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; margin-bottom:1rem; }
+    .stat-cell { background:var(--gray-50); border-radius:var(--radius-sm); padding:.65rem .75rem; }
+    .stat-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--gray-400); margin-bottom:.2rem; }
+    .stat-val   { font-size:1.05rem; font-weight:800; color:var(--gray-800); letter-spacing:-.02em; line-height:1.1; }
+    .stat-sub   { font-size:.68rem; color:var(--gray-400); margin-top:2px; }
+    .stat-cell.accent-green { background:var(--green-light); }
+    .stat-cell.accent-green .stat-val { color:var(--green-dark); }
+    .stat-cell.accent-amber { background:var(--amber-light); }
+    .stat-cell.accent-amber .stat-val { color:var(--amber); }
+    .stat-cell.accent-red   { background:var(--red-light); }
+    .stat-cell.accent-red   .stat-val { color:var(--red); }
+
+    .chart-wrap { padding:1rem 1.25rem 1.1rem; }
+    .chart-title { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--gray-400); margin-bottom:.65rem; }
+    .chart-svg { width:100%; display:block; }
+    .warn-box { padding:.75rem 1rem; background:var(--red-light); border-radius:var(--radius-sm); color:var(--red); font-size:.82rem; font-weight:600; margin:.75rem 1.25rem; }
+    .info-box  { padding:.75rem 1rem; background:var(--blue-light); border-radius:var(--radius-sm); color:var(--blue); font-size:.82rem; font-weight:600; margin:.75rem 1.25rem; }
   </style>
 </head>
 <body>
@@ -355,6 +386,7 @@
   <div class="tab-nav">
     <button class="tab-btn active" onclick="showTab('calc')" id="tab-btn-calc"><span>🔢</span> Calculator</button>
     <button class="tab-btn" onclick="showTab('estimator')" id="tab-btn-estimator"><span>🏠</span> Household Estimator</button>
+    <button class="tab-btn" onclick="showTab('tracker')" id="tab-btn-tracker"><span>📈</span> Usage Tracker</button>
   </div>
 </header>
 
@@ -449,7 +481,57 @@
         <div class="appliance-grid" id="appliance-grid"></div>
       </div>
     </div>
-  </div>
+  </div><!-- /panel-estimator -->
+
+  <!-- TAB: USAGE TRACKER -->
+  <div class="tab-panel" id="panel-tracker">
+    <div class="tracker-grid">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon ci-green">📈</div>
+          <div><div class="card-title">Usage Tracker</div><div class="card-sub">See your daily burn rate and when units run out</div></div>
+        </div>
+        <div class="card-body">
+          <div class="field">
+            <label class="field-label">Units purchased</label>
+            <div class="input-wrap">
+              <span class="input-pre">kWh</span>
+              <input type="number" id="tr-purchased" min="0" step="0.1" placeholder="e.g. 50" oninput="recalcTracker()" />
+            </div>
+            <div class="field-hint">How many units you loaded at the time of purchase</div>
+          </div>
+          <div class="field">
+            <label class="field-label">Date purchased</label>
+            <input type="date" id="tr-date" oninput="recalcTracker()" />
+            <div class="field-hint">The day you bought those units</div>
+          </div>
+          <div class="field">
+            <label class="field-label">Units remaining now</label>
+            <div class="input-wrap">
+              <span class="input-pre">kWh</span>
+              <input type="number" id="tr-remaining" min="0" step="0.1" placeholder="e.g. 28" oninput="recalcTracker()" />
+            </div>
+            <div class="field-hint">Your current meter reading today</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tracker-result">
+        <div class="card">
+          <div class="result-empty"><div class="ei">📈</div><p>Fill in the fields on the left to see your consumption trend</p></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card" id="tracker-chart-card" style="margin-top:1.25rem;display:none;">
+      <div class="chart-wrap">
+        <div class="chart-title">Units remaining over time</div>
+        <div id="tracker-chart"></div>
+      </div>
+    </div>
+  </div><!-- /panel-tracker -->
 
 </div>
 
@@ -485,6 +567,7 @@
 
 <footer>
   <p>Based on <a href="https://www.reg.rw/customer-service/tariffs/" target="_blank">REG official tariffs</a>. VAT 18% included. Estimates assume 30-day months.</p>
+  <p class="credit">Original calculator logic by <a href="https://github.com/ianakotey" target="_blank">Ian Akotey</a> &middot; UI by <a href="https://github.com/RDjarbeng" target="_blank">Richard Djarbeng</a></p>
 </footer>
 
 <script>
@@ -883,10 +966,203 @@ function removeCustom(id,e) {
   renderEstimatorResult();
 }
 
+// ══════════════════════════════════ USAGE TRACKER
+
+function recalcTracker() {
+  const purchased = parseFloat(document.getElementById('tr-purchased').value);
+  const dateVal   = document.getElementById('tr-date').value;
+  const remaining = parseFloat(document.getElementById('tr-remaining').value);
+  const resBox    = document.getElementById('tracker-result');
+  const chartCard = document.getElementById('tracker-chart-card');
+
+  // Require all three fields
+  if (isNaN(purchased) || !dateVal || isNaN(remaining)) {
+    resBox.innerHTML = `<div class="card"><div class="result-empty"><div class="ei">📈</div><p>Fill in all three fields to see your consumption trend</p></div></div>`;
+    chartCard.style.display = 'none';
+    return;
+  }
+
+  const purchaseDate = new Date(dateVal + 'T00:00:00');
+  const today        = new Date(); today.setHours(0,0,0,0);
+  const MS_PER_DAY   = 86400000;
+  const daysElapsed  = Math.max(0, (today - purchaseDate) / MS_PER_DAY);
+  const consumed     = round2(purchased - remaining);
+
+  // Validation
+  if (remaining > purchased) {
+    resBox.innerHTML = `<div class="card"><div class="warn-box">Remaining units (${remaining}) cannot exceed purchased units (${purchased}).</div></div>`;
+    chartCard.style.display = 'none';
+    return;
+  }
+  if (purchaseDate > today) {
+    resBox.innerHTML = `<div class="card"><div class="warn-box">Purchase date cannot be in the future.</div></div>`;
+    chartCard.style.display = 'none';
+    return;
+  }
+  if (daysElapsed === 0) {
+    resBox.innerHTML = `<div class="card"><div class="info-box">You purchased these units today — check back tomorrow to see your daily rate.</div></div>`;
+    chartCard.style.display = 'none';
+    return;
+  }
+  if (consumed <= 0) {
+    resBox.innerHTML = `<div class="card"><div class="info-box">No units consumed yet — your daily rate will appear once you've used some power.</div></div>`;
+    chartCard.style.display = 'none';
+    return;
+  }
+
+  const dailyRate      = round2(consumed / daysElapsed);
+  const daysLeft       = dailyRate > 0 ? remaining / dailyRate : Infinity;
+  const runOutDate     = new Date(today.getTime() + daysLeft * MS_PER_DAY);
+  const monthlyEst     = round2(dailyRate * 30);
+  const monthlyCost    = costFromUnits(monthlyEst, currentTariff).total;
+
+  // Urgency accent
+  const urgency = daysLeft < 3 ? 'accent-red' : daysLeft < 7 ? 'accent-amber' : 'accent-green';
+
+  const fmtDate = (d) => d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  const fmtDays = (d) => {
+    if (!isFinite(d)) return '—';
+    const dd = Math.floor(d);
+    return dd === 0 ? 'today' : dd === 1 ? '1 day' : dd + ' days';
+  };
+
+  resBox.innerHTML = `
+    <div class="card" style="overflow:hidden;">
+      <div class="result-hero">
+        <div class="rh-label">Daily consumption rate</div>
+        <div class="rh-value">${fmt(dailyRate, 2)} kWh/day</div>
+        <div class="rh-sub">${fmt(consumed, 2)} kWh used over ${Math.round(daysElapsed)} day${daysElapsed!==1?'s':''}</div>
+        <div class="rh-tag">${TARIFFS[currentTariff].label}</div>
+      </div>
+      <div style="padding:1rem 1.25rem;">
+        <div class="tracker-stats">
+          <div class="stat-cell ${urgency}">
+            <div class="stat-label">Estimated time left</div>
+            <div class="stat-val">${fmtDays(daysLeft)}</div>
+            <div class="stat-sub">${fmt(remaining,2)} kWh remaining</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Runs out around</div>
+            <div class="stat-val" style="font-size:.88rem">${isFinite(daysLeft) ? fmtDate(runOutDate) : '—'}</div>
+            <div class="stat-sub">at current rate</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Monthly estimate</div>
+            <div class="stat-val">${fmt(monthlyCost, 0)} RWF</div>
+            <div class="stat-sub">${fmt(monthlyEst, 1)} kWh/month</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Days tracked</div>
+            <div class="stat-val">${Math.round(daysElapsed)}</div>
+            <div class="stat-sub">since ${fmtDate(purchaseDate)}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Draw chart
+  chartCard.style.display = 'block';
+  renderTrackerChart(purchased, purchaseDate, remaining, dailyRate, today, runOutDate);
+}
+
+function renderTrackerChart(purchased, purchaseDate, remaining, dailyRate, today, runOutDate) {
+  const W=600, H=270, PL=52, PR=24, PT=18, PB=46;
+  const pw=W-PL-PR, ph=H-PT-PB;
+
+  const tMin = purchaseDate.getTime();
+  const tMax = runOutDate.getTime();
+  const tRange = Math.max(tMax - tMin, 1);
+
+  const tx = t  => PL + ((t - tMin) / tRange) * pw;
+  const ty = u  => PT + ph - (u / purchased) * ph;
+
+  const Ax = tx(tMin),          Ay = ty(purchased);
+  const Bx = tx(today.getTime()), By = ty(remaining);
+  const Cx = tx(tMax),          Cy = ty(0);
+  const todayX = Bx;
+
+  const fmtLbl = d => d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+
+  // Y-axis ticks
+  const rawStep = purchased / 4;
+  const mag  = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const step = Math.ceil(rawStep / mag) * mag;
+  const yTicks = [];
+  for (let u = 0; u <= purchased + step * 0.01; u += step) yTicks.push(Math.min(u, purchased));
+
+  // Build SVG
+  let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" class="chart-svg">`;
+  s += `<rect width="${W}" height="${H}" fill="#fff" rx="0"/>`;
+
+  // Grid + Y labels
+  yTicks.forEach(u => {
+    const y = ty(u);
+    s += `<line x1="${PL}" y1="${y}" x2="${PL+pw}" y2="${y}" stroke="#f3f4f6" stroke-width="1.5"/>`;
+    s += `<text x="${PL-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#9ca3af">${u}</text>`;
+  });
+
+  // Y axis label
+  s += `<text transform="rotate(-90,14,${PT+ph/2})" x="14" y="${PT+ph/2}" text-anchor="middle" font-size="10" fill="#9ca3af">kWh remaining</text>`;
+
+  // Projected shaded area under the dashed line
+  s += `<polygon points="${Bx},${By} ${Cx},${Cy} ${Cx},${PT+ph} ${Bx},${PT+ph}" fill="#fffbeb" opacity="0.7"/>`;
+  // Historical shaded area
+  s += `<polygon points="${Ax},${Ay} ${Bx},${By} ${Bx},${PT+ph} ${Ax},${PT+ph}" fill="#f0fdf4" opacity="0.7"/>`;
+
+  // Today band
+  s += `<rect x="${todayX-0.5}" y="${PT}" width="1" height="${ph}" fill="#94a3b8" opacity="0.5"/>`;
+
+  // Historical line A→B
+  s += `<line x1="${Ax}" y1="${Ay}" x2="${Bx}" y2="${By}" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>`;
+  // Projected line B→C
+  s += `<line x1="${Bx}" y1="${By}" x2="${Cx}" y2="${Cy}" stroke="#d97706" stroke-width="2" stroke-dasharray="7 4" stroke-linecap="round"/>`;
+
+  // Axes
+  s += `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+ph}" stroke="#e5e7eb" stroke-width="1.5"/>`;
+  s += `<line x1="${PL}" y1="${PT+ph}" x2="${PL+pw}" y2="${PT+ph}" stroke="#e5e7eb" stroke-width="1.5"/>`;
+
+  // Dots
+  s += `<circle cx="${Ax}" cy="${Ay}" r="5" fill="#16a34a"/>`;
+  s += `<circle cx="${Bx}" cy="${By}" r="6" fill="#2563eb" stroke="#fff" stroke-width="2"/>`;
+  s += `<circle cx="${Cx}" cy="${Cy}" r="5" fill="#d97706"/>`;
+
+  // Date labels on x-axis
+  const lblY = PT + ph + 16;
+  // Purchase label
+  const purchaseLblX = Math.max(Ax, PL + 2);
+  s += `<text x="${purchaseLblX}" y="${lblY}" text-anchor="middle" font-size="10" fill="#6b7280">${fmtLbl(purchaseDate)}</text>`;
+  // "Today" label — shift left if too close to end
+  const todayLblX = Math.min(Math.max(todayX, PL+30), PL+pw-30);
+  s += `<text x="${todayLblX}" y="${lblY}" text-anchor="middle" font-size="10" fill="#2563eb" font-weight="700">Today</text>`;
+  // End date label
+  const endLblX = Math.min(Cx, PL + pw);
+  s += `<text x="${endLblX}" y="${lblY}" text-anchor="middle" font-size="10" fill="#d97706">${fmtLbl(runOutDate)}</text>`;
+
+  // Second row of x-axis labels (remaining kWh annotations)
+  const lbl2Y = PT + ph + 30;
+  s += `<text x="${purchaseLblX}" y="${lbl2Y}" text-anchor="middle" font-size="9.5" fill="#9ca3af">${purchased} kWh</text>`;
+  s += `<text x="${todayLblX}" y="${lbl2Y}" text-anchor="middle" font-size="9.5" fill="#6b7280">${remaining} kWh left</text>`;
+  s += `<text x="${endLblX}" y="${lbl2Y}" text-anchor="middle" font-size="9.5" fill="#d97706">0 kWh</text>`;
+
+  // Legend (bottom left)
+  const legY = H - 8;
+  s += `<circle cx="${PL}" cy="${legY}" r="4" fill="#16a34a"/>`;
+  s += `<text x="${PL+8}" y="${legY+4}" font-size="10" fill="#6b7280">Actual usage</text>`;
+  s += `<line x1="${PL+82}" y1="${legY}" x2="${PL+98}" y2="${legY}" stroke="#d97706" stroke-width="2" stroke-dasharray="5 3"/>`;
+  s += `<text x="${PL+102}" y="${legY+4}" font-size="10" fill="#6b7280">Projected</text>`;
+  s += `<circle cx="${PL+160}" cy="${legY}" r="4" fill="#2563eb"/>`;
+  s += `<text x="${PL+168}" y="${legY+4}" font-size="10" fill="#6b7280">Today</text>`;
+
+  s += `</svg>`;
+  document.getElementById('tracker-chart').innerHTML = s;
+}
+
 // ══════════════════════════════════ INIT
 updateRateStrip();
 buildApplianceGrid();
 renderEstimatorResult();
+// Default tracker date to today
+document.getElementById('tr-date').valueAsDate = new Date();
 </script>
 </body>
 </html>
